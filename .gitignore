@@ -1,0 +1,7 @@
+node_modules/
+# Materiales de trabajo que no se publican
+cartas/*.png
+cartas/*.jpg
+cartas/*.jpeg
+DISEÑO*.png
+LOGO.jpeg

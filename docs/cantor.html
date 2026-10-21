@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1d4a1c">
+<title>Cantor · Lotería de la Milpa Maya</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800;900&family=Alegreya+Sans+SC:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav">
+  <div class="franja"><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i><i class="f5"></i></div>
+  <div class="nav-fila"><a class="marca" href="./"><img src="img/logo.png" alt="" width="52" height="52"><span><small>Lotería de la</small><b>Milpa Maya</b></span></a><div class="sala"><small>Sala</small><b id="cod">…</b></div></div>
+  <div class="nav-fila2"><span><span class="dot off" id="dot"></span><span id="resumen">Cantor · conectando</span></span><span class="chip" id="modoChip">Modo línea</span></div>
+</header>
+<div class="cantor">
+  <main class="stack">
+    <!-- Preparación -->
+    <section class="card stack" id="setup">
+      <div><h2>Elige cómo jugar</h2><div class="muted" style="margin-top:4px">Selecciona el modo antes de comenzar. Los jugadores ya ven su tablero.</div></div>
+      <div class="cfg">
+        <div><label for="mode">Modo de juego</label>
+          <select id="mode">
+            <option value="clasica">Clásica: llenar todo el tablero</option>
+            <option value="linea">Línea: fila, columna o diagonal</option>
+            <option value="figuras">Figuras</option>
+            <option value="aprendizaje">Aprendizaje: nombre en maya y español</option>
+            <option value="adivinanza">Adivinanza: solo la pista</option>
+          </select></div>
+        <div id="boxWin"><label for="win">Para ganar</label>
+          <select id="win"><option value="linea">Línea</option><option value="clasica">Tablero lleno</option><option value="figuras">Figura</option></select></div>
+        <div id="boxFig"><label for="figura">Figura</label>
+          <select id="figura"><option value="esquinas">Cuatro esquinas</option><option value="centro">Centro (4 cuadros)</option><option value="x">X</option><option value="marco">Marco</option></select></div>
+        <div id="boxReveal"><label for="revealSecs">Revelar la carta tras (segundos)</label><input id="revealSecs" type="number" min="3" max="60"></div>
+      </div>
+      <div class="muted" id="reglaSetup"></div>
+      <button class="btn maiz big" id="btnStart">Comenzar partida</button>
+      <div class="muted" id="avisoMin"></div>
+    </section>
+
+    <!-- Escenario -->
+    <section class="card stage" id="stage" hidden>
+      <div id="escena"></div>
+      <div class="ctl">
+        <button class="btn maiz big" id="btnDraw">Sacar carta</button>
+        <div><label for="interval">Segundos entre cartas</label><input id="interval" type="number" min="2" max="120"></div>
+        <button class="btn tierra" id="btnAuto">Modo automático: NO</button>
+      </div>
+      <div class="pie-regla"><div class="timer" id="cuenta" style="min-height:1.4em"></div>
+      <div class="muted" id="reglaPlay" style="margin-top:6px"></div></div>
+    </section>
+  </main>
+
+  <aside class="stack">
+    <section class="card stack" id="join">
+      <h2>Únete a la partida</h2>
+      <div class="qrbox"><img id="qr" alt="Código QR para entrar" width="200" height="200"><div style="text-align:center"><div class="muted">Código</div><div class="bigcode" id="bigcode"></div><div class="muted" id="url"></div></div></div>
+    </section>
+    <section class="card" id="histCard" hidden>
+      <h3 class="titulo-sec">Cartas que ya salieron <span class="muted">(<span id="nHist">0</span>/<span id="nTot"></span>)</span></h3>
+      <div class="chips" id="hist"></div>
+    </section>
+    <section class="card">
+      <h3>Jugadores (<span id="nPl">0</span>)</h3>
+      <div class="players" id="players" style="margin-top:8px"></div>
+    </section>
+  </aside>
+</div>
+<div class="overlay" id="gana" hidden></div>
+<script src="common.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script type="module">
+import { startHost } from './host.js';
+let S = null, H = null;
+const act = (type, extra) => H && H.action({ type, ...extra });
+const cfg = c => act('config', { config: c });
+
+function pintaQR(code) {
+  const base = location.origin + location.pathname.replace(/[^/]*$/, '');
+  const link = `${base}?c=${code}`;
+  const qr = qrcode(0, 'M'); qr.addData(link); qr.make();
+  $('#qr').src = qr.createDataURL(8, 2);
+  $('#url').textContent = link.replace(/^https?:\/\//, '');
+  $('#cod').textContent = code; $('#bigcode').textContent = code;
+}
+
+for (const id of ['mode', 'win', 'figura']) $('#' + id).onchange = e => cfg({ [id]: e.target.value });
+$('#revealSecs').onchange = e => cfg({ revealSecs: +e.target.value });
+$('#interval').onchange = e => cfg({ interval: +e.target.value });
+$('#btnAuto').onclick = () => S && cfg({ auto: !S.config.auto });
+$('#btnStart').onclick = () => act('start');
+$('#btnDraw').onclick = () => act('draw');
+
+function setVal(id, v) { const el = $('#' + id); if (document.activeElement !== el) el.value = v; }
+
+function renderSetup() {
+  const c = S.config;
+  setVal('mode', c.mode); setVal('win', c.win); setVal('figura', c.figura); setVal('revealSecs', c.revealSecs);
+  const extra = ['aprendizaje', 'adivinanza'].includes(c.mode);
+  $('#boxWin').hidden = !extra;
+  $('#boxFig').hidden = !(c.mode === 'figuras' || (extra && c.win === 'figuras'));
+  $('#boxReveal').hidden = c.mode !== 'adivinanza';
+  const r = reglaTexto(c);
+  $('#reglaSetup').innerHTML = `Ganará quien: ${r.txt.toLowerCase()} ${r.mini}`;
+  $('#avisoMin').textContent = S.playerCount < 5 ? `Hay ${S.playerCount} jugador(es). Lo ideal es empezar con 5 o más.` : '';
+  $('#btnStart').disabled = S.playerCount < 1;
+}
+
+function renderEscena() {
+  const cur = S.current, c = S.config;
+  let h;
+  if (!cur) h = '<div class="big-q"><img src="img/logo.png" alt="" width="160" height="160"></div><div class="nm">Presiona «Sacar carta»</div>';
+  else if (!cur.revealed) h = `<div class="big-q">?</div><div class="pista">${esc(cur.pista)}</div>`;
+  else {
+    const k = BYN.get(cur.n);
+    h = `<img class="carta-grande" src="${k.img}" alt="${esc(k.maya)}">`;
+    if (c.mode === 'aprendizaje') h += `<div class="nm">${esc(k.maya)} – ${esc(k.es)}</div>`;
+  }
+  if ($('#escena').dataset.h !== h) { $('#escena').innerHTML = h; $('#escena').dataset.h = h; }
+}
+
+function renderPlayers() {
+  const ps = S.players;
+  $('#nPl').textContent = ps.length;
+  $('#players').innerHTML = ps.length
+    ? ps.map(p => `<span class="pill ${p.conn ? '' : 'off'}" title="${p.conn ? 'Conectado' : 'Sin conexión'}">${esc(p.name)}</span>`).join('')
+    : '<span class="muted">Aún no entra nadie. Comparte el código o el QR.</span>';
+  $('#resumen').textContent = `Cantor · ${ps.filter(p => p.conn).length}/${ps.length} conectados`;
+}
+
+function renderGana() {
+  const g = $('#gana'), w = S.winner;
+  if (S.status !== 'finished') { g.hidden = true; return; }
+  const board = w ? `<div class="board">${w.board.map((n, i) => `<div class="cell ${w.marks.includes(i) ? 'on' : ''}"><img src="${BYN.get(n).img}" alt="">${w.marks.includes(i) ? '<span class="seed"></span>' : ''}</div>`).join('')}</div>` : '';
+  g.innerHTML = (w
+    ? `<div style="font-size:4rem">🎉</div><h2>¡Lotería!</h2><div class="nombre">${esc(w.name)}</div>${board}`
+    : '<h2>Se acabaron las cartas</h2><div>Nadie cantó lotería.</div>')
+    + '<button class="btn maiz" style="max-width:340px" id="btnNueva">Nueva ronda (tableros nuevos)</button>';
+  g.hidden = false;
+  $('#btnNueva').onclick = () => act('newround');
+}
+
+function onState(s) {
+  clockOff = s.serverNow - Date.now(); S = s;
+  const lobby = s.status === 'lobby';
+  document.body.classList.toggle('jugando', !lobby);
+  $('#modoChip').textContent = 'Modo ' + MODO_NOM[s.config.mode];
+  $('#setup').hidden = !lobby;
+  $('#stage').hidden = lobby;
+  $('#histCard').hidden = lobby;
+  renderPlayers();
+  if (lobby) renderSetup();
+  else {
+    renderEscena();
+    $('#btnDraw').textContent = s.current && !s.current.revealed ? 'Revelar carta ahora' : 'Sacar carta';
+    $('#btnDraw').disabled = s.status !== 'playing';
+    $('#btnAuto').textContent = 'Modo automático: ' + (s.config.auto ? 'SÍ' : 'NO');
+    setVal('interval', s.config.interval);
+    $('#nHist').textContent = s.called.length; $('#nTot').textContent = CARTAS.length;
+    $('#hist').innerHTML = [...s.called].reverse().map(n => `<img src="${BYN.get(n).img}" alt="${esc(BYN.get(n).maya)}" title="${esc(BYN.get(n).maya)}">`).join('');
+    const r = reglaTexto(s.config);
+    $('#reglaPlay').innerHTML = `<b>${MODO_NOM[s.config.mode]}</b> · ${r.txt} ${r.mini}`;
+  }
+  renderGana(); tick();
+}
+
+function tick() {
+  if (!S || S.status !== 'playing') { $('#cuenta').textContent = ''; return; }
+  let t = '';
+  if (S.revealAt) t = `Se revela la carta en ${secsLeft(S.revealAt)} s`;
+  else if (S.nextAt) t = `Siguiente carta en ${secsLeft(S.nextAt)} s`;
+  $('#cuenta').textContent = t;
+}
+setInterval(tick, 500);
+
+(async () => {
+  try {
+    await loadCartas();
+    $('#nTot').textContent = CARTAS.length;
+    let primera = true;
+    H = await startHost({
+      nueva: new URLSearchParams(location.search).has('nueva'),
+      onState: st => { if (primera) { primera = false; pintaQR(st.code); history.replaceState(null, '', 'cantor.html'); } onState(st); },
+      onConn: ok => $('#dot').classList.toggle('off', !ok),
+    });
+    try { await navigator.wakeLock.request('screen'); } catch {}
+  } catch (e) {
+    console.error(e);
+    $('#setup').innerHTML = '<h2>No se pudo crear la sala</h2><p>Revisa tu conexión a internet y que las reglas de Firebase estén publicadas.</p><a class="btn" href="./">Volver</a>';
+  }
+})();
+</script>
+</body>
+</html>

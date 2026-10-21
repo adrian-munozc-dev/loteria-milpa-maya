@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1d4a1c">
+<title>Lotería de la Milpa Maya</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800;900&family=Alegreya+Sans+SC:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap home">
+  <header class="nav" style="width:100%;margin-top:0">
+    <div class="franja grande"><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i><i class="f5"></i></div>
+    <div class="hero-txt"><div class="hero-titulo"><img class="hero-logo" src="img/logo.png" alt="Logo de la Lotería de la Milpa Maya" width="84" height="84"><h1>Lotería de la Milpa Maya</h1></div><p>Cartas en maya, semillas de la milpa y juego en tiempo real desde cualquier celular.</p></div>
+  </header>
+  <div class="stack" style="margin-top:18px">
+
+  <div class="card stack" id="vuelve" hidden>
+    <div id="vuelveTxt"></div>
+    <button class="btn maiz" id="btnVuelve">Volver a mi partida</button>
+    <button class="btn ghost" id="btnOlvida">Empezar de nuevo</button>
+  </div>
+
+  <div class="opciones">
+  <form class="card destaca" id="fJoin">
+    <h2>Unirme a una partida</h2>
+    <div><label for="code">Código de la sala</label><input id="code" class="code-in" type="text" placeholder="MILPA-42" autocomplete="off" autocapitalize="characters"></div>
+    <div><label for="name">Tu nombre</label><input id="name" type="text" maxlength="20" placeholder="Ej. Doña Rosa" autocomplete="nickname"></div>
+    <div class="err" id="errJoin" role="alert"></div>
+    <button class="btn" id="btnJoin" style="margin-top:auto">¡Entrar!</button>
+  </form>
+
+  <div class="card">
+    <h2>Soy el anfitrión</h2>
+    <ol class="muted" style="margin:0;padding-left:1.2em;flex:1;line-height:1.6"><li>Crea la sala y proyecta tu pantalla.</li><li>Comparte el código o el QR.</li><li>Elige el modo y canta las cartas.</li><li>Deja esa pestaña abierta durante la partida.</li></ol>
+    <button class="btn tierra" id="btnCrea">Crear partida</button>
+  </div>
+  </div>
+  </div>
+</div>
+<script src="common.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const digits = s => String(s || '').replace(/\D/g, '');
+if (q.get('c')) $('#code').value = q.get('c');
+if (q.get('error')) $('#errJoin').textContent = q.get('error');
+
+const ses = getSes();
+let sala = null;
+try { sala = localStorage.getItem('milpa.sala'); } catch {}
+const esJugador = ses && ses.role === 'player' && (!q.get('c') || digits(ses.code) === digits(q.get('c')));
+if (esJugador || (sala && !q.get('c'))) {
+  $('#vuelve').hidden = false;
+  $('#vuelveTxt').innerHTML = esJugador
+    ? `Estabas en la sala <b>${esc(ses.code)}</b> como <b>${esc(ses.name)}</b>.`
+    : `Tienes la sala <b>${esc(sala)}</b> como anfitrión.`;
+  $('#btnVuelve').onclick = () => { location.href = esJugador ? 'jugador.html' : 'cantor.html'; };
+  $('#btnOlvida').onclick = () => { clearSes(); $('#vuelve').hidden = true; };
+}
+if (ses && ses.role === 'player') $('#name').value = ses.name;
+
+$('#btnCrea').onclick = () => { location.href = 'cantor.html?nueva=1'; };
+
+$('#fJoin').onsubmit = e => {
+  e.preventDefault();
+  const d = digits($('#code').value), name = $('#name').value.trim();
+  if (!d || !name) { $('#errJoin').textContent = 'Escribe el código y tu nombre.'; return; }
+  setSes({ role: 'player', code: 'MILPA-' + d, name });
+  location.href = 'jugador.html';
+};
+</script>
+</body>
+</html>

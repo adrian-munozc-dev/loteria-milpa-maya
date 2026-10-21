@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1d4a1c">
+<title>Jugador · Lotería de la Milpa Maya</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700;800;900&family=Alegreya+Sans+SC:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav angosta">
+  <div class="franja"><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i><i class="f5"></i></div>
+  <div class="nav-fila"><a class="marca" href="./"><img src="img/logo.png" alt="" width="52" height="52"><span><small>Lotería de la</small><b>Milpa Maya</b></span></a><div class="sala"><small>Sala</small><b id="cod"></b></div></div>
+  <div class="nav-fila2"><span><span class="dot off" id="dot"></span><span id="nom"></span></span><span class="chip" id="modoChip">Modo línea</span></div>
+</header>
+<div class="wrap stack" style="padding-bottom:0">
+  <div class="card err" id="aviso" hidden></div>
+  <div class="estado-card" id="estado"><b>Conectando…</b></div>
+  <div class="board" id="board"></div>
+  <div class="muted" id="regla" style="text-align:center"></div>
+  <details class="card"><summary><b>Cartas que ya salieron</b> (<span id="nSalidas">0</span>)</summary><div class="chips" id="hist" style="margin-top:8px"></div></details>
+</div>
+<div class="sticky"><button class="btn tierra big" id="btnLoteria" disabled>¡Lotería!</button></div>
+<div class="overlay" id="gana" hidden></div>
+<script src="common.js"></script>
+<script type="module">
+import { conectar, ref, get, set, onValue, onDisconnect, serverTimestamp } from './firebase.js';
+
+const ses = getSes();
+if (!ses || ses.role !== 'player') location.replace('./');
+const code = ses.code;
+$('#nom').textContent = ses.name; $('#cod').textContent = code;
+const arr = v => (Array.isArray(v) ? v : v ? Object.values(v) : []);
+let S = null, board = [], pub = null, mine = null, online = false;
+const hostOnline = () => !pub || !pub.ping || (Date.now() + clockOff - pub.ping) < 150000; // el anfitrión renueva el latido cada 20 s
+
+function renderBoard() {
+  const b = $('#board');
+  if (b.children.length !== 16 || board.join() !== S.me.board.join()) {
+    board = S.me.board;
+    b.innerHTML = board.map((n, i) => {
+      const c = BYN.get(n);
+      return `<button class="cell" data-i="${i}" aria-label="${esc(c.maya)} (${esc(c.es)})"><img src="${c.img}" alt="${esc(c.maya)}"></button>`;
+    }).join('');
+  }
+  const marks = new Set(S.me.marks), win = S.winner && S.winner.id === S.me.id;
+  [...b.children].forEach((el, i) => {
+    const on = marks.has(i);
+    el.classList.toggle('on', on);
+    const seed = el.querySelector('.seed');
+    if (on && !seed) el.insertAdjacentHTML('beforeend', '<span class="seed"></span>');
+    if (!on && seed) seed.remove();
+    el.classList.toggle('win', !!win && on);
+  });
+}
+
+function renderEstado() {
+  const el = $('#estado'), cur = S.current;
+  let h;
+  if (S.status === 'lobby') h = '<div class="rotulo">Esperando</div><div class="maya" style="font-size:1.6rem;font-weight:900">Que el cantor empiece</div><div class="muted">Ya tienes tu tablero. ¡Prepara tus semillas!</div>';
+  else if (!cur) h = '<b>Va a salir la primera carta…</b>';
+  else if (cur.revealed) {
+    const c = BYN.get(cur.n), aprende = S.config.mode === 'aprendizaje';
+    h = `<div class="now"><img src="${c.img}" alt=""><div><div class="rotulo">Acaba de salir</div><div class="maya">${esc(c.maya)}</div>${aprende ? `<div>${esc(c.es)}</div>` : ''}</div></div>`;
+  } else h = `<div class="now"><div class="q">?</div><div><div class="rotulo">Adivina la carta</div><div><b>${esc(cur.pista)}</b></div></div></div>`;
+  if (el.dataset.h !== h) { el.innerHTML = h; el.dataset.h = h; }
+}
+
+function renderRegla() {
+  const r = reglaTexto(S.config);
+  $('#regla').innerHTML = `<b>Modo ${MODO_NOM[S.config.mode]}.</b> ${r.txt} ${r.mini}`;
+  $('#nSalidas').textContent = S.called.length;
+  $('#hist').innerHTML = [...S.called].reverse().map(n => `<img src="${BYN.get(n).img}" alt="${esc(BYN.get(n).maya)}">`).join('');
+}
+
+function renderGana() {
+  const g = $('#gana'), w = S.winner;
+  if (S.status !== 'finished') { g.hidden = true; return; }
+  const yo = w && w.id === S.me.id;
+  const marks = w ? arr(w.marks) : [];
+  const tab = w ? `<div class="board">${arr(w.board).map((n, i) => `<div class="cell ${marks.includes(i) ? 'on' : ''}"><img src="${BYN.get(n).img}" alt="">${marks.includes(i) ? '<span class="seed"></span>' : ''}</div>`).join('')}</div>` : '';
+  g.innerHTML = w
+    ? `<div style="font-size:4rem">🎉</div><h2>${yo ? '¡Ganaste!' : '¡Lotería!'}</h2><div class="nombre">${esc(w.name)}</div><div>${yo ? 'Completaste tu tablero.' : 'ganó esta ronda'}</div>${tab}<div class="muted" style="color:#cfe3c2">Espera a que el cantor inicie la siguiente ronda…</div>`
+    : `<h2>Se acabaron las cartas</h2><div>Nadie cantó lotería esta ronda.</div><div class="muted" style="color:#cfe3c2">Espera la siguiente ronda…</div>`;
+  g.hidden = false;
+}
+
+function recompute() {
+  const dot = $('#dot'); dot.classList.toggle('off', !online);
+  const av = $('#aviso');
+  av.hidden = !(online && !hostOnline());
+  av.textContent = 'El anfitrión está desconectado. Tu tablero está a salvo; el juego sigue cuando vuelva.';
+  if (!pub || !mine || !mine.board) {
+    $('#estado').innerHTML = '<b>Entrando a la sala…</b>';
+    $('#btnLoteria').disabled = true;
+    return;
+  }
+  const prev = S;
+  S = { ...pub, called: arr(pub.called), me: { id: ses.uid, name: mine.name, board: arr(mine.board), marks: arr(mine.marks) } };
+  if (prev && prev.status !== 'lobby' && S.status === 'lobby') toast('¡Nueva ronda! Tienes un tablero nuevo.');
+  if (mine.name && mine.name !== ses.name) { ses.name = mine.name; setSes(ses); $('#nom').textContent = mine.name; }
+  $('#modoChip').textContent = 'Modo ' + MODO_NOM[S.config.mode];
+  renderBoard(); renderEstado(); renderRegla(); renderGana();
+  $('#btnLoteria').disabled = S.status !== 'playing';
+}
+
+function volver(msg) {
+  location.replace('./?c=' + encodeURIComponent(code) + '&error=' + encodeURIComponent(msg));
+}
+
+try {
+  await loadCartas();
+  const { db, uid } = await conectar('player');
+  ses.uid = uid;
+  const base = `salas/${code}`;
+  const host = (await get(ref(db, `${base}/hostUid`))).val();
+  if (!host) { clearSes(); volver('No encontramos esa sala. Revisa el código.'); throw 0; }
+
+  const me = ref(db, `${base}/jugadores/${uid}`);
+  const cur = (await get(me)).val();
+  if (!cur || !cur.name) await set(ref(db, `${base}/jugadores/${uid}/name`), ses.name);
+  setSes(ses);
+
+  onValue(ref(db, '.info/serverTimeOffset'), s => { clockOff = s.val() || 0; });
+  onValue(ref(db, '.info/connected'), s => {
+    online = !!s.val();
+    if (online) {
+      const c = ref(db, `${base}/jugadores/${uid}/conn`);
+      onDisconnect(c).set(false); set(c, true);
+    }
+    recompute();
+  });
+  onValue(ref(db, `${base}/hostUid`), s => { if (s.val() === null) { clearSes(); sinSala(); } });
+  setInterval(recompute, 15000);
+  onValue(ref(db, `${base}/pub`), s => { pub = s.val(); recompute(); });
+  onValue(me, s => { mine = s.val(); recompute(); });
+
+  // Marcar una carta: se guarda en Firebase (que encola el cambio si la conexión es lenta)
+  $('#board').addEventListener('click', e => {
+    const el = e.target.closest('.cell');
+    if (!el || !S) return;
+    if (S.status !== 'playing') return toast('Aún no empieza la partida.');
+    const i = +el.dataset.i, marks = new Set(S.me.marks);
+    marks.has(i) ? marks.delete(i) : marks.add(i);
+    navigator.vibrate && navigator.vibrate(15);
+    set(ref(db, `${base}/jugadores/${uid}/marks`), marks.size ? [...marks] : null)
+      .catch(() => toast('No se pudo marcar. Revisa tu conexión.', true));
+  });
+
+  // ¡Lotería!: se envía el reclamo y el anfitrión responde solo a este jugador
+  let esperando = null;
+  onValue(ref(db, `${base}/resp/${uid}`), s => {
+    const r = s.val();
+    if (!r || !esperando || r.id !== esperando.id) return;
+    clearTimeout(esperando.t); esperando = null;
+    $('#btnLoteria').disabled = !S || S.status !== 'playing';
+    if (!r.ok) toast(r.msg || 'Todavía no es válida.', true);
+  });
+  $('#btnLoteria').onclick = () => {
+    const id = Math.random().toString(36).slice(2);
+    $('#btnLoteria').disabled = true;
+    esperando = { id, t: setTimeout(() => { esperando = null; $('#btnLoteria').disabled = false; toast('El anfitrión no responde. Intenta otra vez.', true); }, 10000) };
+    set(ref(db, `${base}/reclamo/${uid}`), { id, at: serverTimestamp() }).catch(() => toast('No se pudo enviar. Revisa tu conexión.', true));
+  };
+} catch (e) {
+  if (e !== 0) { console.error(e); $('#estado').innerHTML = '<b>No se pudo conectar.</b><div class="muted">Revisa tu internet y recarga la página.</div>'; }
+}
+</script>
+</body>
+</html>

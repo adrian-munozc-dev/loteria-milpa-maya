@@ -1,0 +1,177 @@
+[
+ {
+  "n": 2,
+  "maya": "Tsuuk nal",
+  "es": "Cabello (pelo) de elote",
+  "pista": "Estoy justo en la punta del elote tierno.",
+  "img": "cartas/2.webp"
+ },
+ {
+  "n": 3,
+  "maya": "Sak'ab",
+  "es": "Tallo de maíz",
+  "pista": "Soy el cuerpo de la mata: alto, verde y con nudos.",
+  "img": "cartas/3.webp"
+ },
+ {
+  "n": 5,
+  "maya": "Iik",
+  "es": "Chile",
+  "pista": "Hago llorar a quien me muerde.",
+  "img": "cartas/5.webp"
+ },
+ {
+  "n": 7,
+  "maya": "Xúul",
+  "es": "Bastón plantador",
+  "pista": "Abro el hoyo en la tierra donde echas las semillas.",
+  "img": "cartas/7.webp"
+ },
+ {
+  "n": 8,
+  "maya": "Kúukul ch'aak'",
+  "es": "Tumba de monte",
+  "pista": "Derribas los árboles para empezar la milpa.",
+  "img": "cartas/8.webp"
+ },
+ {
+  "n": 9,
+  "maya": "Suup'",
+  "es": "Barda de palos",
+  "pista": "Son palos amarrados para delimitar la milpa.",
+  "img": "cartas/9.webp"
+ },
+ {
+  "n": 11,
+  "maya": "P'aak",
+  "es": "Tomate",
+  "pista": "Rojo y redondo, no falta en la salsa.",
+  "img": "cartas/11.webp"
+ },
+ {
+  "n": 14,
+  "maya": "Chi'ikam",
+  "es": "Jícama",
+  "pista": "Por fuera café, por dentro blanca, fresca y crujiente.",
+  "img": "cartas/14.webp"
+ },
+ {
+  "n": 16,
+  "maya": "Máaskab",
+  "es": "Machete",
+  "pista": "Fiel compañero del milpero para chapear y cortar.",
+  "img": "cartas/16.webp"
+ },
+ {
+  "n": 17,
+  "maya": "Joma'",
+  "es": "Calabazo",
+  "pista": "Fruto seco y hueco sirve para llevar el agua al trabajo.",
+  "img": "cartas/17.webp"
+ },
+ {
+  "n": 18,
+  "maya": "Wats'",
+  "es": "Doblar caña",
+  "pista": "Es cuando quiebras la mata del elote para proteger la mazorca.",
+  "img": "cartas/18.webp"
+ },
+ {
+  "n": 19,
+  "maya": "Iis",
+  "es": "Camote",
+  "pista": "Soy dulce de cáscara morada y corazón naranja.",
+  "img": "cartas/19.webp"
+ },
+ {
+  "n": 22,
+  "maya": "Ts'íim",
+  "es": "Yuca",
+  "pista": "Soy larga de cáscara café y carne blanca.",
+  "img": "cartas/22.webp"
+ },
+ {
+  "n": 25,
+  "maya": "U kúuchil kij",
+  "es": "Henequén",
+  "pista": "De mi sale la fibra.",
+  "img": "cartas/25.webp"
+ },
+ {
+  "n": 26,
+  "maya": "T'í'il / T'o'ol",
+  "es": "Surcos",
+  "pista": "Plantas en fila, una tras otra, a lo largo del terreno.",
+  "img": "cartas/26.webp"
+ },
+ {
+  "n": 31,
+  "maya": "Koostal",
+  "es": "Costal",
+  "pista": "Bolsa tejida donde se guarda y carga el grano.",
+  "img": "cartas/31.webp"
+ },
+ {
+  "n": 33,
+  "maya": "Jooch",
+  "es": "Cosechar",
+  "pista": "Llegó el tiempo de recoger lo que dio la tierra.",
+  "img": "cartas/33.webp"
+ },
+ {
+  "n": 34,
+  "maya": "Xuuxak'",
+  "es": "Canasta",
+  "pista": "Soy tejida a mano y en mí depositan las mazorcas.",
+  "img": "cartas/34.webp"
+ },
+ {
+  "n": 36,
+  "maya": "Kool",
+  "es": "Milpa",
+  "pista": "Es donde el maíz, el frijol y la calabaza viven en familia.",
+  "img": "cartas/36.webp"
+ },
+ {
+  "n": 38,
+  "maya": "Bu'ul",
+  "es": "Frijol",
+  "pista": "Soy negrito y pequeño, acompaño cada tortilla.",
+  "img": "cartas/38.webp"
+ },
+ {
+  "n": 44,
+  "maya": "Júubche'",
+  "es": "Monte joven",
+  "pista": "Monte que vuelve a crecer donde antes hubo milpa.",
+  "img": "cartas/44.webp"
+ },
+ {
+  "n": 47,
+  "maya": "Oxo'om",
+  "es": "Desgranado del maíz",
+  "pista": "Con las manos cambias de lugar a los granos de maíz.",
+  "img": "cartas/47.webp"
+ },
+ {
+  "n": 49,
+  "maya": "K'úum",
+  "es": "Calabaza",
+  "pista": "Grande y redonda, a veces acompaño al arroz con leche.",
+  "img": "cartas/49.webp"
+ },
+ {
+  "n": 52,
+  "maya": "Lóobche'",
+  "es": "Coa",
+  "pista": "Herramienta para quitar la hierba que ahoga la milpa.",
+  "img": "cartas/52.webp"
+ },
+ {
+  "n": 53,
+  "maya": "I'ínaj",
+  "es": "Semilla (de maíz)",
+  "pista": "Soy cosecha anterior, me guardan para volver a sembrar.",
+  "img": "cartas/53.webp"
+ }
+]
